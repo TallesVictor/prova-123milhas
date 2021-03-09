@@ -7,20 +7,12 @@ use Illuminate\Http\Request;
 
 class ConsultaAPIController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        //
-    }
 
-    public function consultaVoos()
+    /**Consultar todos os voos */
+    public function consultarVoos()
     {
         $consultaApi = new ConsultaAPI();
-        $consultaApi = $consultaApi->consultaVoos();
+        $consultaApi = $consultaApi->consultarVoos();
 
         if (!$consultaApi) {
             return response('Voos não encontrado', 404);
@@ -30,6 +22,7 @@ class ConsultaAPIController extends Controller
             ->json($consultaApi);
     }
 
+    /**Criar o agrupamento dos voos */
     public function agrupamentoVoos()
     {
         $consultaApi = new ConsultaAPI();

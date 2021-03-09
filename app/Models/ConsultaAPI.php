@@ -9,41 +9,46 @@ class ConsultaAPI extends Model
 {
     use HasFactory;
 
-
-    public function consultaVoos()
+    /**Consultar todos os voos */
+    public function consultarVoos()
     {
         $consultaVoos = ConsultaAPI::consultarAPI("GET", null);
         return $consultaVoos;
     }
 
+    /**Criar o agrupamento dos voos */
     public function agrupamentoVoos()
     {
+        // Consultar API para pegar voos de ida e volta
         $param = ['outbound' => 1];
         $outbound = ConsultaAPI::consultarAPI("GET", $param);
 
         $param = ['inbound' => 1];
         $inbound = ConsultaAPI::consultarAPI("GET", $param);
 
+        // Mescla os dois voos para ter todos em um único array
         $arrTotal = array_merge($outbound, $inbound);
+
+        // Declarando variáveis
         $arrFareInbound = array();
         $grupo = array();
         $countGrupo = 0;
+
+        // Capturando os tipos de voos distintos
         foreach ($inbound as $arrInbound) {
             if (strlen(array_search($arrInbound["fare"], $arrFareInbound)) == 0)
                 array_push($arrFareInbound, $arrInbound["fare"]);
         }
 
+        // Fazer agrupamento por tipo de voo
         for ($i = 0; $i < count($arrFareInbound); $i++) {
-            echo "<h4>$arrFareInbound[$i]</h4>";
             $arrTemp = [];
             foreach ($inbound as $arrInbound) {
                 if ($arrInbound["fare"] == $arrFareInbound[$i]) {
-                    $arrTemp[] = [
-                        'price' => $arrInbound['price'],
-                        'id' => $arrInbound['id']
-                    ];
+                    $arrTemp[] = $arrInbound;
                 }
             }
+            // Verificando se i é maior que 0, para mesclar todos arrays em apenas um Grupo
             if ($i > 0) {
                 $countGrupo = count($grupo[0]);
                 array_push($grupo[0], ConsultaAPI::criarGrupos($outbound,  $arrFareInbound[$i], $arrTemp, $countGrupo));
@@ -52,6 +57,7 @@ class ConsultaAPI extends Model
             }
         }
 
+        // Montando o array final
         $grupo = [
             'flights' => $arrTotal,
             'groups' => $grupo[0],
@@ -65,6 +71,7 @@ class ConsultaAPI extends Model
         return $grupo;
     }
 
+    /** Realizar contas na api @type = Tipo 'Post, GET, Delete..', @param = Parametros para requisição */
     private static function consultarAPI(String $type,  $param)
     {
         // Consultar na API
@@ -83,20 +90,29 @@ class ConsultaAPI extends Model
         return $content;
     }
 
+    /** Criar os grupos de Voos. @outbound = Array dos voos de ida, @fare = Tipo de voo, @inbound = Array voos de volta, @countGrupo = Quantos grupos formados ja existem */
     private static function criarGrupos($outbound, $fare, $inbound, $countGrupo)
     {
+        // Montando um array com todos os voos daquele tipo
         $arr = [];
         foreach ($outbound as $arrOutbound) {
             if ($arrOutbound['fare'] ==   $fare) {
                 $arr[] = $arrOutbound;
             }
         }
-        // dd($inbound);
+
+        // Montando o sgrupos
         $grupoAux = [];
         for ($i = 1; $i < count($arr) + 1; $i++) {
+
             $priceIda = 0;
             $ida = [];
             $k = 0;
+
+            /* Roda todos os elementos do array, fazendo todas combinações possiveis com os voo de volta. 
+             A combinação é : Um voo de ida - todos os voos de volta*/
+
+            //  Voos de ida
             foreach ($arr as $key) {
 
                 if ($k < $i) {
@@ -108,6 +124,7 @@ class ConsultaAPI extends Model
                 $k++;
             }
 
+            // Voos de volta
             for ($j = 1; $j < count($inbound) + 1; $j++) {
                 $priceVolta = 0;
                 $volta = [];
@@ -123,9 +140,7 @@ class ConsultaAPI extends Model
                     $k++;
                 }
 
-                $volta = str_replace("[,", "", $volta);
-                $price = number_format($priceIda + $priceVolta, 2, ',', ' ');
-                // echo count($grupo);
+                // Montando o grupo
                 $grupoTemp = [
                     'uniqueId' => $countGrupo + count($grupoAux),
                     'totalPrice' => $priceIda + $priceVolta,
@@ -134,11 +149,11 @@ class ConsultaAPI extends Model
                     'inbound' => $volta,
                 ];
                 $grupoAux[] = $grupoTemp;
-                // echo "Ida - [$ida] & Volta - [$volta] - Preço $price <br>";
             }
         }
-        usort($grupoAux, function ($a, $b) {
-            return $a['totalPrice'] <=> $b['totalPrice'];
+        // Ordendando pelo preço
+        usort($grupoAux, function ($x, $y) {
+            return $x['totalPrice'] <=> $y['totalPrice'];
         });
         return $grupoAux;
     }
