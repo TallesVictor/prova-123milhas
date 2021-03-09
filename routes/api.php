@@ -15,5 +15,5 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/consultaVoos', [ConsultaAPIController::class, 'consultaVoos']);
+Route::get('/consultarVoos', [ConsultaAPIController::class, 'consultarVoos']);
 Route::get('/agrupamentoVoos', [ConsultaAPIController::class, 'agrupamentoVoos']);
